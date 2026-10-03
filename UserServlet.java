@@ -61,6 +61,12 @@ public class UserServlet extends HttpServlet {
                 case "delete":
                     showDeleteForm(request, response);
                     break;
+                case "search":
+                    searchUsersByCountry(request, response);
+                    break;
+                case "sort":
+                    sortUsersByName(request, response);
+                    break;
                 default:
                     listUser(request, response);
                     break;
@@ -87,7 +93,10 @@ public class UserServlet extends HttpServlet {
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws SQLException, ServletException, IOException {
         int id = Integer.parseInt(request.getParameter("id"));
-        User existingUser = userDAO.selectUser(id);
+        
+        // CẬP NHẬT: Sử dụng Stored Procedure getUserById thay cho selectUser cũ
+        User existingUser = userDAO.getUserById(id); 
+        
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/edit.jsp");
         request.setAttribute("user", existingUser);
         dispatcher.forward(request, response);
@@ -102,13 +111,37 @@ public class UserServlet extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
+    private void searchUsersByCountry(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        String country = request.getParameter("country");
+        if (country == null) {
+            country = "";
+        }
+        List<User> listUser = userDAO.selectUsersByCountry(country);
+        request.setAttribute("listUser", listUser);
+        request.setAttribute("searchCountry", country);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void sortUsersByName(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        List<User> listUser = userDAO.sortUsersByName();
+        request.setAttribute("listUser", listUser);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
+        dispatcher.forward(request, response);
+    }
+
     private void insertUser(HttpServletRequest request, HttpServletResponse response)
             throws Exception {
         String name = request.getParameter("name");
         String email = request.getParameter("email");
         String country = request.getParameter("country");
         User newUser = new User(name, email, country);
-        userDAO.insertUser(newUser);
+        
+        // CẬP NHẬT: Sử dụng Stored Procedure insertUserStore thay cho insertUser cũ
+        userDAO.insertUserStore(newUser);
+        
         response.sendRedirect("users");
     }
 
@@ -131,58 +164,3 @@ public class UserServlet extends HttpServlet {
         response.sendRedirect("users");
     }
 }
-protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "";
-        }
-
-        try {
-            switch (action) {
-                case "create":
-                    showNewForm(request, response);
-                    break;
-                case "edit":
-                    showEditForm(request, response);
-                    break;
-                case "delete":
-                    showDeleteForm(request, response);
-                    break;
-                case "search":
-                    searchUsersByCountry(request, response);
-                    break;
-                case "sort":
-                    sortUsersByName(request, response);
-                    break;
-                default:
-                    listUser(request, response);
-                    break;
-            }
-        } catch (Exception ex) {
-            throw new ServletException(ex);
-        }
-    }
-
-    // Phương thức xử lý tìm kiếm theo quốc gia
-    private void searchUsersByCountry(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        String country = request.getParameter("country");
-        if (country == null) {
-            country = "";
-        }
-        List<User> listUser = userDAO.selectUsersByCountry(country);
-        request.setAttribute("listUser", listUser);
-        request.setAttribute("searchCountry", country); // Giữ lại từ khóa trên ô input tìm kiếm
-        RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
-        dispatcher.forward(request, response);
-    }
-
-    // Phương thức xử lý sắp xếp theo tên
-    private void sortUsersByName(HttpServletRequest request, HttpServletResponse response)
-            throws SQLException, ServletException, IOException {
-        List<User> listUser = userDAO.sortUsersByName();
-        request.setAttribute("listUser", listUser);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
-        dispatcher.forward(request, response);
-    }
