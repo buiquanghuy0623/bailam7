@@ -93,10 +93,7 @@ public class UserServlet extends HttpServlet {
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws SQLException, ServletException, IOException {
         int id = Integer.parseInt(request.getParameter("id"));
-        
-        // CẬP NHẬT: Sử dụng Stored Procedure getUserById thay cho selectUser cũ
         User existingUser = userDAO.getUserById(id); 
-        
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/edit.jsp");
         request.setAttribute("user", existingUser);
         dispatcher.forward(request, response);
@@ -137,10 +134,22 @@ public class UserServlet extends HttpServlet {
         String name = request.getParameter("name");
         String email = request.getParameter("email");
         String country = request.getParameter("country");
+        
+        // Nhận danh sách quyền hạn (permissions) được check từ form
+        String[] permissionsStr = request.getParameterValues("permissions");
+        int[] permissions = null;
+        
+        if (permissionsStr != null) {
+            permissions = new int[permissionsStr.length];
+            for (int i = 0; i < permissionsStr.length; i++) {
+                permissions[i] = Integer.parseInt(permissionsStr[i]);
+            }
+        }
+        
         User newUser = new User(name, email, country);
         
-        // CẬP NHẬT: Sử dụng Stored Procedure insertUserStore thay cho insertUser cũ
-        userDAO.insertUserStore(newUser);
+        // Gọi phương thức Transaction để thêm user và phân quyền đồng thời
+        userDAO.addUserTransaction(newUser, permissions);
         
         response.sendRedirect("users");
     }
