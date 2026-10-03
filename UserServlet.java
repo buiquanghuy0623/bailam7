@@ -67,6 +67,10 @@ public class UserServlet extends HttpServlet {
                 case "sort":
                     sortUsersByName(request, response);
                     break;
+                // 👉 BỔ SUNG CASE CHO BƯỚC 4 (KIỂM TRA KHÔNG DÙNG TRANSACTION)
+                case "test-without-tran":
+                    testWithoutTran(request, response);
+                    break;
                 default:
                     listUser(request, response);
                     break;
@@ -127,6 +131,18 @@ public class UserServlet extends HttpServlet {
         request.setAttribute("listUser", listUser);
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
         dispatcher.forward(request, response);
+    }
+
+    // 👉 BỔ SUNG PHƯƠNG THỨC XỬ LÝ TEST KHÔNG DÙNG TRANSACTION CHO BƯỚC 4
+    private void testWithoutTran(HttpServletRequest request, HttpServletResponse response) {
+        userDAO.insertUpdateWithoutTransaction();
+        System.out.println("Đã chạy xong hàm testWithoutTran. Hãy kiểm tra database!");
+        // Chuyển hướng hoặc thông báo về trang danh sách
+        try {
+            response.sendRedirect("users");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void insertUser(HttpServletRequest request, HttpServletResponse response)
