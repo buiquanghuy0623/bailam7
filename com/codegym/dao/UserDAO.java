@@ -29,6 +29,58 @@ private static final String SQL_INSERT = "INSERT INTO Employee (name, salary, cr
             + ")";
     private static final String SQL_TABLE_DROP = "DROP TABLE IF EXISTS Employee";
 @Override
+    public List<User> selectAllUsers() {
+        List<User> users = new ArrayList<>();
+        // Sử dụng {CALL get_all_users()} với CallableStatement
+        try (Connection connection = getConnection();
+             CallableStatement statement = connection.prepareCall("{CALL get_all_users()}");
+             ResultSet rs = statement.executeQuery()) {
+            
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String email = rs.getString("email");
+                String country = rs.getString("country");
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    // 2. Sửa thông tin user sử dụng Stored Procedure
+    @Override
+    public boolean updateUser(User user) throws SQLException {
+        boolean rowUpdated;
+        // Sử dụng {CALL update_user(?,?,?,?)} với CallableStatement
+        try (Connection connection = getConnection();
+             CallableStatement statement = connection.prepareCall("{CALL update_user(?,?,?,?)}")) {
+            
+            statement.setInt(1, user.getId());
+            statement.setString(2, user.getName());
+            statement.setString(3, user.getEmail());
+            statement.setString(4, user.getCountry());
+            
+            rowUpdated = statement.executeUpdate() > 0;
+        }
+        return rowUpdated;
+    }
+
+    // 3. Xoá user sử dụng Stored Procedure
+    @Override
+    public boolean deleteUser(int id) throws SQLException {
+        boolean rowDeleted;
+        // Sử dụng {CALL delete_user(?)} với CallableStatement
+        try (Connection connection = getConnection();
+             CallableStatement statement = connection.prepareCall("{CALL delete_user(?)}")) {
+            
+            statement.setInt(1, id);
+            rowDeleted = statement.executeUpdate() > 0;
+        }
+        return rowDeleted;
+    }
+    @Override
     public void insertUpdateUseTransaction() {
         try (Connection conn = getConnection();
              Statement statement = conn.createStatement();
