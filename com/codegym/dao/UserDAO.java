@@ -28,7 +28,46 @@ private static final String SQL_INSERT = "INSERT INTO Employee (name, salary, cr
             + " PRIMARY KEY (id)"
             + ")";
     private static final String SQL_TABLE_DROP = "DROP TABLE IF EXISTS Employee";
+@Override
+    public void insertUpdateUseTransaction() {
+        try (Connection conn = getConnection();
+             Statement statement = conn.createStatement();
+             PreparedStatement psInsert = conn.prepareStatement(SQL_INSERT);
+             PreparedStatement psUpdate = conn.prepareStatement(SQL_UPDATE)) {
 
+            statement.execute(SQL_TABLE_DROP);
+            statement.execute(SQL_TABLE_CREATE);
+
+            // 1. Tắt chế độ auto-commit để bắt đầu Transaction
+            conn.setAutoCommit(false); 
+
+            // 2. Chạy 2 lệnh Insert
+            psInsert.setString(1, "Quynh");
+            psInsert.setBigDecimal(2, new BigDecimal(10));
+            psInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            psInsert.execute();
+
+            psInsert.setString(1, "Ngan");
+            psInsert.setBigDecimal(2, new BigDecimal(20));
+            psInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            psInsert.execute();
+
+            // 3. Lệnh Update (Cố tình gán sai tham số để tạo lỗi ở lần chạy 1)
+            psUpdate.setBigDecimal(2, new BigDecimal(999.99)); // Sai index
+            psUpdate.setString(2, "Quynh");
+            psUpdate.execute();
+
+            // 4. Xác nhận commit nếu không có lỗi xảy ra
+            conn.commit();
+            
+            conn.setAutoCommit(true);
+
+        } catch (Exception e) {
+            System.out.println("Lỗi xảy ra, Transaction sẽ tự động huỷ bỏ (rollback) khi đóng kết nối!");
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }
     @Override
     public void insertUpdateWithoutTransaction() {
         try (Connection conn = getConnection();
