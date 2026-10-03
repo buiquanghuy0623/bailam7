@@ -17,7 +17,52 @@ public class UserDAO implements IUserDAO {
     private static final String UPDATE_USERS_SQL = "UPDATE users SET name = ?, email = ?, country = ? WHERE id = ?;";
 private static final String SELECT_USERS_BY_COUNTRY = "SELECT id, name, email, country FROM users WHERE country LIKE ?;";
     private static final String SORT_USERS_BY_NAME = "SELECT id, name, email, country FROM users ORDER BY name ASC;";
+private static final String SQL_INSERT = "INSERT INTO Employee (name, salary, created_Date) VALUES (?,?,?)";
+    private static final String SQL_UPDATE = "UPDATE Employee SET salary=? WHERE name=?";
+    private static final String SQL_TABLE_CREATE = "CREATE TABLE Employee"
+            + "("
+            + " id INT(11) AUTO_INCREMENT,"
+            + " name VARCHAR(100) NOT NULL,"
+            + " salary DECIMAL(15, 2) NOT NULL,"
+            + " created_Date TIMESTAMP,"
+            + " PRIMARY KEY (id)"
+            + ")";
+    private static final String SQL_TABLE_DROP = "DROP TABLE IF EXISTS Employee";
 
+    @Override
+    public void insertUpdateWithoutTransaction() {
+        try (Connection conn = getConnection();
+             Statement statement = conn.createStatement();
+             PreparedStatement psInsert = conn.prepareStatement(SQL_INSERT);
+             PreparedStatement psUpdate = conn.prepareStatement(SQL_UPDATE)) { 
+             
+            // 1. Xoá bảng cũ và tạo lại bảng mới
+            statement.execute(SQL_TABLE_DROP);
+            statement.execute(SQL_TABLE_CREATE);
+             
+            // 2. Chèn 2 nhân viên (Quynh và Ngan)
+            psInsert.setString(1, "Quynh");
+            psInsert.setBigDecimal(2, new BigDecimal(10));
+            psInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            psInsert.execute(); 
+            
+            psInsert.setString(1, "Ngan");
+            psInsert.setBigDecimal(2, new BigDecimal(20));
+            psInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            psInsert.execute();
+
+            // 3. Cố tình tạo lỗi ở lệnh Update (chưa gán giá trị tham số 1)
+            psUpdate.setBigDecimal(2, new BigDecimal(999.99));
+            psUpdate.setString(2, "Quynh");
+            
+            // Lệnh này sẽ ném ra Exception
+            psUpdate.execute();
+            
+        } catch (Exception e) {
+            System.out.println("Đã bắt được lỗi trong quá trình thực thi SQL:");
+            e.printStackTrace();
+        }
+    }
     public List<User> selectUsersByCountry(String countryKeyword) {
         List<User> users = new ArrayList<>();
         try (Connection connection = getConnection();
