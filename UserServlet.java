@@ -67,9 +67,12 @@ public class UserServlet extends HttpServlet {
                 case "sort":
                     sortUsersByName(request, response);
                     break;
-                // 👉 BỔ SUNG CASE CHO BƯỚC 4 (KIỂM TRA KHÔNG DÙNG TRANSACTION)
                 case "test-without-tran":
                     testWithoutTran(request, response);
+                    break;
+                // 👉 BỔ SUNG CASE CHO BƯỚC 3 (KIỂM TRA CÓ DÙNG TRANSACTION)
+                case "test-use-tran":
+                    testUseTran(request, response);
                     break;
                 default:
                     listUser(request, response);
@@ -133,11 +136,20 @@ public class UserServlet extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
-    // 👉 BỔ SUNG PHƯƠNG THỨC XỬ LÝ TEST KHÔNG DÙNG TRANSACTION CHO BƯỚC 4
     private void testWithoutTran(HttpServletRequest request, HttpServletResponse response) {
         userDAO.insertUpdateWithoutTransaction();
         System.out.println("Đã chạy xong hàm testWithoutTran. Hãy kiểm tra database!");
-        // Chuyển hướng hoặc thông báo về trang danh sách
+        try {
+            response.sendRedirect("users");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 👉 BỔ SUNG PHƯƠNG THỨC GỌI HÀM TEST DÙNG TRANSACTION
+    private void testUseTran(HttpServletRequest request, HttpServletResponse response) {
+        userDAO.insertUpdateUseTransaction();
+        System.out.println("Hoàn tất gọi hàm testUseTran!");
         try {
             response.sendRedirect("users");
         } catch (IOException e) {
@@ -151,7 +163,6 @@ public class UserServlet extends HttpServlet {
         String email = request.getParameter("email");
         String country = request.getParameter("country");
         
-        // Nhận danh sách quyền hạn (permissions) được check từ form
         String[] permissionsStr = request.getParameterValues("permissions");
         int[] permissions = null;
         
@@ -163,8 +174,6 @@ public class UserServlet extends HttpServlet {
         }
         
         User newUser = new User(name, email, country);
-        
-        // Gọi phương thức Transaction để thêm user và phân quyền đồng thời
         userDAO.addUserTransaction(newUser, permissions);
         
         response.sendRedirect("users");
